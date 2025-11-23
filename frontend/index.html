@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOR-Unveil: Forensic Analysis Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/dist/vis-network.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/vis-network@9.1.2/dist/dist/vis-network.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>🧅 TOR-Unveil</h1>
+                <p class="subtitle">Forensic Correlator & Analytical Dashboard</p>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">System Ready</span>
+            </div>
+        </header>
+
+        <!-- Control Panel -->
+        <section class="control-panel">
+            <div class="panel-card">
+                <h3>🌐 Topology Management</h3>
+                <button class="btn btn-primary" onclick="crawlTopology()">
+                    <span class="btn-icon">🔄</span> Crawl TOR Network
+                </button>
+                <button class="btn btn-secondary" onclick="loadNodes()">
+                    <span class="btn-icon">📡</span> View Guard Nodes
+                </button>
+                <div class="status-msg" id="topologyStatus"></div>
+            </div>
+
+            <div class="panel-card">
+                <h3>📦 PCAP Analysis</h3>
+                <input type="file" id="pcapFile" accept=".pcap,.pcapng" class="file-input">
+                <button class="btn btn-primary" onclick="uploadPCAP()">
+                    <span class="btn-icon">⬆️</span> Upload & Analyze
+                </button>
+                <div class="status-msg" id="pcapStatus"></div>
+            </div>
+
+            <div class="panel-card">
+                <h3>🔗 Correlation Engine</h3>
+                <button class="btn btn-success" onclick="runCorrelation()">
+                    <span class="btn-icon">⚡</span> Run Correlation
+                </button>
+                <button class="btn btn-secondary" onclick="loadResults()">
+                    <span class="btn-icon">📊</span> Load Results
+                </button>
+                <div class="status-msg" id="correlationStatus"></div>
+            </div>
+
+            <div class="panel-card">
+                <h3>📄 Report Generation</h3>
+                <button class="btn btn-info" onclick="generateReport('pdf')">
+                    <span class="btn-icon">📑</span> Generate PDF
+                </button>
+                <button class="btn btn-info" onclick="generateReport('csv')">
+                    <span class="btn-icon">📊</span> Export CSV
+                </button>
+                <div class="status-msg" id="reportStatus"></div>
+            </div>
+        </section>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+            <button class="tab-btn" onclick="switchTab('network')">Network Graph</button>
+            <button class="tab-btn" onclick="switchTab('timeline')">Timeline</button>
+            <button class="tab-btn" onclick="switchTab('results')">Correlation Results</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Overview Tab -->
+            <div id="overview-tab" class="tab-pane active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="guardNodeCount">0</div>
+                        <div class="stat-label">Guard Nodes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="flowCount">0</div>
+                        <div class="stat-label">Network Flows</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="correlationCount">0</div>
+                        <div class="stat-label">Correlations</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avgConfidence">0.00</div>
+                        <div class="stat-label">Avg Confidence</div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h2>System Overview</h2>
+                    <p>TOR-Unveil correlates network traffic with TOR topology to identify probable entry guard nodes. 
+                       The system uses temporal alignment, bandwidth feasibility analysis, and flow fingerprinting 
+                       to generate forensic-grade evidence trails.</p>
+                    
+                    <h3>Workflow:</h3>
+                    <ol>
+                        <li><strong>Crawl Topology:</strong> Fetch current TOR consensus and relay descriptors</li>
+                        <li><strong>Upload PCAP:</strong> Ingest captured network traffic for analysis</li>
+                        <li><strong>Run Correlation:</strong> Match flows to probable entry guards</li>
+                        <li><strong>Generate Report:</strong> Export findings in PDF/CSV format</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Network Graph Tab -->
+            <div id="network-tab" class="tab-pane">
+                <div class="graph-controls">
+                    <label>
+                        <input type="checkbox" id="showGuards" checked onchange="updateNetworkGraph()"> 
+                        Show Guard Nodes
+                    </label>
+                    <label>
+                        <input type="checkbox" id="showExits" checked onchange="updateNetworkGraph()"> 
+                        Show Exit Nodes
+                    </label>
+                    <label>
+                        <input type="checkbox" id="showCorrelations" checked onchange="updateNetworkGraph()"> 
+                        Show Correlations
+                    </label>
+                </div>
+                <div id="network-graph" class="visualization"></div>
+            </div>
+
+            <!-- Timeline Tab -->
+            <div id="timeline-tab" class="tab-pane">
+                <div id="timeline-viz" class="visualization"></div>
+            </div>
+
+            <!-- Results Tab -->
+            <div id="results-tab" class="tab-pane">
+                <div class="results-header">
+                    <h2>Correlation Results</h2>
+                    <button class="btn btn-sm btn-secondary" onclick="loadResults()">🔄 Refresh</button>
+                </div>
+                <div id="results-table" class="table-container"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>TOR-Unveil v1.0 | Forensic Analysis Tool | For Lawful Investigation Use Only</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processing...</p>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/timeline.js"></script>
+</body>
+</html>
